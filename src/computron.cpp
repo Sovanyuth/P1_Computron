@@ -14,12 +14,22 @@ void load_from_file(array<int, memorySize>& memory, const string& filename)
 
     if (!inputFile) throw runtime_error("Invalid Input!");
 
-	while (getline(inputFile, line)) 
-	{
-		instruction = stoi(line);
+    while (getline(inputFile, line))
+    {
+        instruction = stoi(line);
+        if (instruction == sentinel) break;
 
-		if (instruction == sentinel) break;
-	}
+        if (validWord(instruction)) 
+        {
+            memory[i] = instruction;
+        }
+        else 
+        {
+            throw runtime_error("Invalid Instruction!");
+        }   
+        i++;
+    }
+
 
 	inputFile.close();
 }
@@ -41,7 +51,7 @@ Command opCodeToCommand(size_t opCode)
         case 42: return Command::branchZero;
         case 43: return Command::halt;
         default:
-            break;// To Do: Complete
+            return Command::halt;
 	}
 }
 
