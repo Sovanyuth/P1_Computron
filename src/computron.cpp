@@ -187,10 +187,6 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
             break;
 
         default:
-            if (!validWord)
-            {
-                throw runtime_error("Invalid Value!");
-            }
             break;
         };
 
