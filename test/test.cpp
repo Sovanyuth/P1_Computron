@@ -3,7 +3,7 @@
 #include "computron.h"
 #include "vector"
 
-TEST_CASE("Basic Read Operation", "[read]")
+TEST_CASE("Basic Read Operation valid", "[read][valid]")
 {
     // step 1: initialization
     std::array<int, memorySize> memory = { 0 };
@@ -33,6 +33,28 @@ TEST_CASE("Basic Read Operation", "[read]")
     REQUIRE(memory[21] == 389);
     REQUIRE(memory[22] == -1232);
     REQUIRE(memory[23] == 3189);
+}
+
+TEST_CASE("Basic Read Operation invalid", "[read][invalid]")
+{
+    // step 1: initialization
+    std::array<int, memorySize> memory = { 0 };
+    int accumulator = 0;
+    size_t instructionCounter = 0;
+    int instructionRegister = 0;
+    size_t operationCode = 0;
+    size_t operand = 0;
+    std::vector<int> inputs = { -99999 }; // Reading sentinel value
+
+    // step 2: setting the memory location for read
+    memory[0] = 1020;
+    memory[1] = 4300;
+
+    // step 3: verify the results, should throw an exception here
+    REQUIRE_THROWS_AS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+        &operationCode, &operand, inputs), runtime_error);
+    REQUIRE(instructionCounter == 0);
+    REQUIRE(memory[20] == 0);
 }
 
 TEST_CASE("Basic Load & Store Operation", "[load][store][valid]")
@@ -92,6 +114,38 @@ TEST_CASE("Basic Load & Store Operation", "[load][store][valid]")
         REQUIRE(memory[48] == -47);
     }
 }
+
+TEST_CASE("Basic Load & Store Operation Invalid", "[load][store][Invalid]")
+{
+    SECTION("Load Operation Invalid")
+    {
+        // step 1: initialization
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 0;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        // step 2: setting the memory location at 25 index for the load operator
+        memory[25] = -99999;
+
+        // loading snetinel at memory location "25" into the accumulator
+        memory[0] = 2025;
+
+        // step 3: halt the program
+        memory[1] = 4300;
+
+        REQUIRE_THROWS_AS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs), runtime_error);
+
+        // step 4: verify the results
+        REQUIRE(instructionCounter == 0);
+        REQUIRE(accumulator == 0);
+    }
+}
+
 
 TEST_CASE("Add, Subtract, Multiply, & Divide", "[add][subtract][multiply][divide][valid]") 
 {
@@ -265,17 +319,215 @@ TEST_CASE("Add, Subtract, Multiply, & Divide", "[add][subtract][multiply][divide
     }
 }
 
-//TEST_CASE("Branch, BranchNeg, BranchZero", "[branch][branchNeg][branchZero][valid]") 
-//{
-//   std::array<int, memorySize> memory = { 0 };
-//   int accumulator = 0;
-//   size_t instructionCounter = 0;
-//   int instructionRegister = 0;
-//   size_t operationCode = 0;
-//   size_t operand = 0;
-//   std::vector<int> inputs = { 0 };
-//
-//   memory[0] = 4030;
-//
-//
-//}
+TEST_CASE("Add, Subtract, Multiply, & Divide Invalid", "[add][subtract][multiply][divide][invalid]")
+{
+    SECTION("Add Operation Invalid")
+    {
+        // step 1: initialization
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 2016;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        // step 2: picking the word at a specific memory location, then adding it to the accumulator
+        // choosing 10000 to get over 9999
+        memory[89] = 10000;
+
+        // loading the value at memory location "25" into the accumulator
+        memory[0] = 3089;
+
+        REQUIRE_THROWS_AS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs), runtime_error);
+
+        // step 4: verify the results
+        REQUIRE(instructionCounter == 0);
+        REQUIRE(accumulator == 2016); // stays the same, no operation happened
+    }
+    SECTION("Invalid Subtract Operation")
+    {
+        // step 1: initialization
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = -9900;  // close to the lower bound
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        // step 2: setting operand in memory such that subtraction goes out of bounds:
+        // subtracting 200 will yield -9900 - 200 = -10100, which is below -9999.
+        memory[38] = 200;
+        // Instruction "3138": opcode 31 (subtract) with operand 38.
+        memory[0] = 3138;
+        // step 3: expect the execution to throw an error due to accumulator underflow.
+        REQUIRE_THROWS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs));
+    }
+
+    // Test case: Divide operation with division by zero
+    SECTION("Invalid Divide Operation: Division by Zero")
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 2016;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        // Set the divisor to zero (invalid for division)
+        memory[89] = 0;
+        // Instruction "3289": opcode 32 (divide) with operand 89.
+        memory[0] = 3289;
+
+        // Expect the execute function to throw an exception because of division by zero.
+        REQUIRE_THROWS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs));
+    }
+
+    // Test case: Multiply operation causing overflow
+    SECTION("Invalid Multiply Operation: Overflow")
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 300;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        // Multiplication that exceeds the positive bound: 300 * 40 = 12000 (> 9999)
+        memory[89] = 40;
+        // Instruction "3389": opcode 33 (multiply) with operand 89.
+        memory[0] = 3389;
+
+        // Expect an exception because the resulting accumulator (12000) is out-of-bounds.
+        REQUIRE_THROWS(execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs));
+    }
+}
+
+TEST_CASE("Branch, BranchNeg, BranchZero", "[branch][branchNeg][branchZero][valid]") 
+{
+    SECTION("Branch Forward Operation") 
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 0;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        memory[0] = 4030;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 30);
+    }
+
+    SECTION("Branch Backward Operation")
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 0;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 1,2,3,4 };
+
+        // Branching backwards multiple time 
+        memory[0] = 1000;
+        memory[1] = 1001;
+        memory[2] = 1002;
+        memory[3] = 1003;
+        memory[4] = 4000;
+        memory[5] = 4300;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 0);
+    }
+    
+    SECTION("BranchNeg Operation") 
+    {
+        // Testing negative accumulator
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = -2178;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        memory[0] = 4130;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 30);
+    }
+
+    SECTION("BranchZero Operation")
+    {
+        // Testing zero accumulator, accumulator is actually 0. There should be a branch
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 0;
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        memory[0] = 4230;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 30);
+    }
+}
+
+TEST_CASE("Branch, BranchNeg, BranchZero No Branch", "[branch][branchNeg][branchZero]")
+{
+    SECTION("BranchNeg Operation Failed") 
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 931; // Positive AC
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        memory[0] = 4130;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 1);
+    }
+
+    SECTION("BranchZero Operation Failed")
+    {
+        std::array<int, memorySize> memory = { 0 };
+        int accumulator = 931; // Positive AC
+        size_t instructionCounter = 0;
+        int instructionRegister = 0;
+        size_t operationCode = 0;
+        size_t operand = 0;
+        std::vector<int> inputs = { 0 };
+
+        memory[0] = 4230;
+
+        execute(memory, &accumulator, &instructionCounter, &instructionRegister,
+            &operationCode, &operand, inputs);
+
+        REQUIRE(instructionCounter == 1);
+    }
+}

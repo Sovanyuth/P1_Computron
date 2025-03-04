@@ -18,19 +18,19 @@ void load_from_file(array<int, memorySize>& memory, const string& filename)
     {
         instruction = stoi(line);
         if (instruction == sentinel) break;
-
+        // Checking if word is valid before putting in memory location
         if (validWord(instruction)) 
         {
             memory[i] = instruction;
         }
         else 
         {
+        // Throw an error is invalid
             throw runtime_error("Invalid Instruction!");
         }   
+        // Increment the index
         i++;
     }
-
-
 	inputFile.close();
 }
 
@@ -38,6 +38,7 @@ Command opCodeToCommand(size_t opCode)
 {
 	switch (opCode)
 	{
+        // Implementing all different instructions for each opcode
 		case 10: return Command::read;
         case 11: return Command::write;
         case 20: return Command::load;
@@ -51,6 +52,7 @@ Command opCodeToCommand(size_t opCode)
         case 42: return Command::branchZero;
         case 43: return Command::halt;
         default:
+            // halt the program as a default to prevent getting stuck
             return Command::halt;
 	}
 }
@@ -70,6 +72,8 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
         case Command::read:
             word = inputs[inputIndex];
             // Assign the value of 'word' to the memory location pointed to by 'opPtr'
+            if (!validWord(word)) throw runtime_error("Invalid Value!");
+
             memory[*opPtr] = word;
             // Increment the instruction counter (icPtr) to point to the next instruction
             (*icPtr)++;
@@ -80,7 +84,6 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
             // use the below cout if needed but comment before submission
             //std::cout << "Contents of " << std::setfill('0') << std::setw(2) 
             //          << *opPtr << " : +" << memory[*opPtr] << "\n";
-            
             //Dereference 'icPtr' to access the instruction counter and increment its value by 1
             (*icPtr)++;
             break;
@@ -88,6 +91,7 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
         case Command::load:
             //Load the value from the memory location pointed to by 'opPtr' into the accumulator (acPtr)
             word = memory[*opPtr];
+            if (!validWord(word)) throw runtime_error("Invalid Value!");
             *acPtr = word;
 
             (*icPtr)++;
@@ -183,6 +187,10 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
             break;
 
         default:
+            if (!validWord)
+            {
+                throw runtime_error("Invalid Value!");
+            }
             break;
         };
 
@@ -190,6 +198,7 @@ void execute(std::array<int, memorySize>& memory, int* const acPtr, size_t* cons
     } while (opCodeToCommand(*opCodePtr) != Command::halt);
 };
 
+// Checking if the words are within bounds, return true if it is
 bool validWord(int word)
 {
     if (word < minWord || word > maxWord) return false;
@@ -205,6 +214,7 @@ void output(const int& accumulator,
 {
     // using the "setfill" and "setw" functions from iomanip to print the desirable results
     cout << "Registers" << endl;
+    // Checking if accumulator is negative, to display it with a negative sign
     if (accumulator < 0) 
     {
         cout << "accumulator          -" << std::setfill('0') << std::setw(4) << abs(accumulator) << endl;
@@ -232,6 +242,7 @@ void printMemomryCols()
 // Helper #3: Goes into the memory array and prints out everything 
 void printMemoryBlock(int&& memoryIndex, const array<int, memorySize>& memory) 
 {
+    // Utilizing double for loops to print all the memory blocks in a matrix like format
     for (int i = 0; i < 10; i++)
     {
         cout << setfill(' ') << setw(2) << 10 * i << ' ';
@@ -239,13 +250,15 @@ void printMemoryBlock(int&& memoryIndex, const array<int, memorySize>& memory)
         for (int j = 0; j < 10; j++)
         {
             int word = memory[memoryIndex];
-
+            // Checking if word is valid or not. In case of sentinel '-99999' then turn into +0000
             if (!validWord(word))
             {
                 cout << '+' << setfill('0') << setw(5);
             }
+            // If the word is valid 
             else
             {
+                // Checking to see if the number is negative or not
                 if (word < 0) 
                 {
                     cout << '-' << setfill('0') << setw(4) << abs(word);
@@ -255,7 +268,7 @@ void printMemoryBlock(int&& memoryIndex, const array<int, memorySize>& memory)
                     cout << '+' << setfill('0') << setw(4) << word;
                 }
             }
-
+            // Increment index
             memoryIndex++;
         }
         cout << endl;
@@ -269,7 +282,6 @@ void dump(std::array<int, memorySize>& memory, int accumulator,
 {
     // Printing Output
     output(accumulator, instructionCounter, instructionRegister, operationCode, operand);
-
     // Memory Block::
     printMemomryCols();
     printMemoryBlock(0, memory);

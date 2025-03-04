@@ -15,13 +15,6 @@ int main() {
 
     load_from_file(memory, "p1.txt");
 
-    for (int i = 0; i < 10; i++) 
-    {
-        cout << memory[i] << " ";
-    }
-
-    cout << endl;
-
     execute(memory, &accumulator,
         &instructionCounter, &instructionRegister,
         &operationCode, &operand, inputs);
